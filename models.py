@@ -2,7 +2,6 @@ import timm
 import torch
 from torch import nn
 
-
 def init_model(model_name: str) -> torch.nn.Module:
     """Initialize Model."""
     m = timm.create_model(model_name, pretrained=False, num_classes=14)
