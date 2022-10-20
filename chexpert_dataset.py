@@ -55,9 +55,9 @@ class CheXpertDataset(Dataset):
         img_name = os.path.join(self.root_dir, self.df.iloc[idx, 0])
         cxr_img = Image.open(img_name)
         label = self.df.iloc[idx, 5:]
-        label = torch.tensor([label])
+        label = torch.tensor([label]).squeeze()
 
         if self.transform:
-            cxr_img = self.transform(cxr_img).squeeze()
+            cxr_img = self.transform(cxr_img)
 
         return cxr_img, label
