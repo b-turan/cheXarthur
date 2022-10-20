@@ -65,7 +65,6 @@ def main():
     print("Number of Parameters: ", n_params)
 
     model.train()
-    correct = torch.zeros(14).to(device)
     epoch_loss = 0
     count_samples = torch.zeros(14).to(device)
     for x, y in tqdm(train_loader):
@@ -76,13 +75,10 @@ def main():
         logits = model(x)
         loss = criterion(logits, y)
 
-        # Create binary mask to ignore NaN
-        mask = torch.logical_not(loss.isnan())
-        assert mask.sum() > 0, "Instability! Seems like the gradient exploded."
+        # Mask to ignore ``NaN`` and ``uncertainty`` labels
+        mask = y != ign_idx
+        loss = torch.masked_select(loss, mask).mean()
 
-        # Replace all NaN values in loss by 0 and calculate mean
-        loss = loss.nan_to_num()
-        loss = torch.sum(loss) / mask.sum()
         epoch_loss += loss
 
         loss.backward()
@@ -90,10 +86,8 @@ def main():
         optimizer.step()
         optimizer.zero_grad()
 
-        y = y.nan_to_num(ign_idx).to(torch.int8)
-        preds = torch.sigmoid(logits)
-
         # Metrics
+        preds = torch.sigmoid(logits)
         mean_acc = accuracy_metric(preds, y)
         f1_score = f1_metric(preds, y)
         precision_score = precision_metric(preds, y)
