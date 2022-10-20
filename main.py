@@ -19,7 +19,7 @@ from models import DummyClassifier
 # https://discuss.pytorch.org/t/question-about-bce-losses-interface-and-features/50969/4
 
 
-# warning: The output image might be different depending on its type: when downsampling,
+# NOTE: The output image might be different depending on its type: when downsampling,
 # the interpolation of PIL images and tensors is slightly different, because PIL applies antialiasing.
 # This may lead to significant differences in the performance of a network.
 # Therefore, it is preferable to train and serve a model with the same input types.
