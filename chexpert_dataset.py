@@ -28,6 +28,7 @@ class CheXpertDataset(Dataset):
         split: str,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
+        ign_idx: Optional[int] = -1,
     ) -> None:
         """
         Args:
@@ -43,6 +44,7 @@ class CheXpertDataset(Dataset):
         # fmt: on
 
         self.df = pd.read_csv(root_dir + f"CheXpert-v1.0-small/{split}.csv")
+        self.df.fillna(value=ign_idx, inplace=True)  # Replace NaN with -1 (``uncertainty``)
         self.root_dir = root_dir
         self.transform = transform
         self.target_transform = target_transform
@@ -55,7 +57,7 @@ class CheXpertDataset(Dataset):
         img_name = os.path.join(self.root_dir, self.df.iloc[idx, 0])
         cxr_img = Image.open(img_name)
         label = self.df.iloc[idx, 5:]
-        label = torch.tensor([label]).squeeze()
+        label = torch.tensor([label], dtype=torch.float16).squeeze()
 
         if self.transform:
             cxr_img = self.transform(cxr_img)
