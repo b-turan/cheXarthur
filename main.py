@@ -1,8 +1,12 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from torchmetrics.classification import (BinaryAccuracy, MultilabelF1Score,
-                                         MultilabelPrecision, MultilabelRecall)
+from torchmetrics.classification import (
+    BinaryAccuracy,
+    MultilabelF1Score,
+    MultilabelPrecision,
+    MultilabelRecall,
+)
 from torchvision import models, transforms
 from tqdm import tqdm
 
@@ -25,36 +29,55 @@ from custom_models import initialize_model
 # TODO: Write class ``MetricsCheXpert``
 # TODO: Crop imgs?
 
+N_CLASSES = 14
+IGN_IDX = -100
+N_CHANNELS = 3
+CLASS_NAMES = [
+    "Atelectasis",
+    "Cardiomegaly",
+    "Effusion",
+    "Infiltration",
+    "Mass",
+    "Nodule",
+    "Pneumonia",
+    "Pneumothorax",
+    "Consolidation",
+    "Edema",
+    "Emphysema",
+    "Fibrosis",
+    "Pleural_Thickening",
+    "Hernia",
+]
+DATA_DIR = ".data/"
+BATCH_SIZE = 64
+
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Running on Device:", device)
-    ign_idx = -100  # ignored label
-    n_channels = 3  # 1 for grayscaled or 3 for RGB (useful for pre-trained models)
-    batch_size = 64
 
     train_data = CheXpertDataset(
         root_dir=".data/",
         split="train",
         transform=transforms.Compose([transforms.Resize([320, 320]), transforms.ToTensor()]),
-        ignore_index=ign_idx,
+        ignore_index=IGN_IDX,
         policy="ignore",
-        n_channels=n_channels,
+        n_channels=N_CHANNELS,
     )
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4)
+    train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
-    model = initialize_model(model_name="resnet18", n_channels=n_channels, pre_trained=False)
+    model = initialize_model(model_name="resnet18", n_channels=N_CHANNELS, pre_trained=False)
     model = model.to(device)
 
     criterion = nn.BCEWithLogitsLoss(reduction="none").to(device)
 
     # Metrics
-    accuracy_metric = BinaryAccuracy(ignore_index=ign_idx).to(device)
-    f1_metric = MultilabelF1Score(num_labels=14, ignore_index=ign_idx, average=None).to(device)
-    precision_metric = MultilabelPrecision(num_labels=14, ignore_index=ign_idx, average=None).to(
+    accuracy_metric = BinaryAccuracy(ignore_index=IGN_IDX).to(device)
+    f1_metric = MultilabelF1Score(num_labels=14, ignore_index=IGN_IDX, average=None).to(device)
+    precision_metric = MultilabelPrecision(num_labels=14, ignore_index=IGN_IDX, average=None).to(
         device
     )
-    recall_metric = MultilabelRecall(num_labels=14, ignore_index=ign_idx, average=None).to(device)
+    recall_metric = MultilabelRecall(num_labels=14, ignore_index=IGN_IDX, average=None).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -76,7 +99,7 @@ def main():
         loss = criterion(logits, y)
 
         # Mask to ignore ``NaN`` and ``uncertainty`` labels
-        mask = y != ign_idx
+        mask = y != IGN_IDX
         loss = torch.masked_select(loss, mask).mean()
 
         epoch_loss += loss
