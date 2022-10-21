@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torchvision import models
 
+# TODO: Write dict that maps model name to corresponding model
 
 def initialize_model(
     model_name: str, n_channels: int, pre_trained: bool
