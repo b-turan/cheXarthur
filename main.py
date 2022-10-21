@@ -68,11 +68,15 @@ def main():
 
     # Metrics
     accuracy_metric = BinaryAccuracy(ignore_index=IGN_IDX).to(device)
-    f1_metric = MultilabelF1Score(num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None).to(device)
-    precision_metric = MultilabelPrecision(num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None).to(
+    f1_metric = MultilabelF1Score(num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None).to(
         device
     )
-    recall_metric = MultilabelRecall(num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None).to(device)
+    precision_metric = MultilabelPrecision(
+        num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None
+    ).to(device)
+    recall_metric = MultilabelRecall(num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None).to(
+        device
+    )
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
