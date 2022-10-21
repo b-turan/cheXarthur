@@ -93,7 +93,7 @@ def main():
         logits = model(x)
         loss = criterion(logits, y)
 
-        # Mask to ignore ``NaN`` and ``uncertainty`` labels
+        # Mask to ignore ``NaN``
         mask = y != IGN_IDX
         loss = torch.masked_select(loss, mask).mean()
 
