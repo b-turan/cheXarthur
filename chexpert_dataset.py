@@ -27,35 +27,58 @@ class CheXpertDataset(Dataset):
         root_dir: str,
         split: str,
         transform: Optional[Callable] = None,
-        target_transform: Optional[Callable] = None,
-        ign_idx: Optional[int] = -1,
+        ignore_index: Optional[int] = -100,
+        policy: Optional[str] = "ignore",
+        n_channels: Optional[int] = 1,
     ) -> None:
         """
         Args:
             root_dir (str): Relative path to directory, where the dataset is located.
             split (string): The dataset split, supports ``train``, or ``valid``.
-            transform (Optional[Callable], optional): Transforms images. Defaults to None.
-            target_transform (Optional[Callable], optional):  Transforms targets (e.g., ignore strategies).
-                Defaults to None.
+            transform (Callable, optional): Transforms images. Defaults to None.
+            ignore_index (int, optional): Replaces all NaN's by ignore_index, which are ignored in later loss calculations.
+            policy (str, optional): Determines how to deal with ``uncertainty label``,
+                supports ``ignore``, ``ones`` and ``zeros``.
+            n_channels (int, optional): Number of color channels, supports 1 and 3.
+                If n_channels=3, R=G=B=Grayscale, which is useful since it allows loading pretrained models.
         """
         # fmt: off
         assert split in ("train", "valid"), f"Expected support for split is ``train`` or ``valid``, got ``{split}``"
         assert root_dir[-1] == "/", f"Expected ``root_dir`` to have ``/`` at the end of the string, got ``{root_dir}``"
+        assert policy in ("ignore", "ones", "zeros"), f"Expected support for ``policy`` is ``ignore``, ``ones`` or ``zeros``, got ``{policy}``"
+        assert n_channels in (1, 3), f"Expected support for ``n_channels`` is 1 or 3, got ``{n_channels}``"
         # fmt: on
 
+        self.ignore_index = ignore_index
+        self.policy = policy
+        self.n_channels = n_channels
+
+        # Read data
         self.df = pd.read_csv(root_dir + f"CheXpert-v1.0-small/{split}.csv")
-        self.df.fillna(value=ign_idx, inplace=True)  # Replace NaN with -1 (``uncertainty``)
+        # Replace NaN with ignore_index
+        self.df.fillna(value=self.ignore_index, inplace=True)
+
+        if policy == "ignore":
+            self.df.replace(to_replace=-1, value=-100, inplace=True)
+        elif policy == "ones":
+            self.df.replace(to_replace=-1, value=1, inplace=True)
+        elif policy == "zeros":
+            self.df.replace(to_replace=-1, value=0, inplace=True)
+
         self.root_dir = root_dir
         self.transform = transform
-        self.target_transform = target_transform
 
     def __len__(self) -> int:
         return len(self.df)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, Any]:
-        # TODO: fix "Any" to correct format
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         img_name = os.path.join(self.root_dir, self.df.iloc[idx, 0])
-        cxr_img = Image.open(img_name)
+
+        if self.n_channels == 1:
+            cxr_img = Image.open(img_name)
+        else:
+            cxr_img = Image.open(img_name).convert("RGB")
+
         label = self.df.iloc[idx, 5:]
         label = torch.tensor([label], dtype=torch.float16).squeeze()
 
