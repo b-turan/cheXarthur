@@ -17,7 +17,7 @@ def initialize_model(model_name: str, n_channels: int, pre_trained: bool) -> tor
         torch.tensor: Artificial Neural Net.
     """
     # fmt: off
-    assert model_name == "densenet121", f"Only supports ``densenet121`` at the moment, got {model_name}."
+    assert model_name == "densenet121", f"Only supports ``densenet121`` for now, got ``{model_name}``."
     # fmt: on
     weights = models.DenseNet121_Weights.IMAGENET1K_V1 if pre_trained else None
     model = models.densenet121(weights)

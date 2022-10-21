@@ -61,7 +61,7 @@ def main():
     )
     train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
-    model = initialize_model(model_name="resnet18", n_channels=N_CHANNELS, pre_trained=False)
+    model = initialize_model(model_name="densenet121", n_channels=N_CHANNELS, pre_trained=False)
     model = model.to(device)
 
     criterion = nn.BCEWithLogitsLoss(reduction="none").to(device)
