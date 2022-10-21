@@ -76,7 +76,7 @@ class CheXpertDataset(Dataset):
 
         if self.n_channels == 1:
             cxr_img = Image.open(img_name)
-        else:
+        elif self.n_channels == 3:
             cxr_img = Image.open(img_name).convert("RGB")
 
         label = self.df.iloc[idx, 5:]
