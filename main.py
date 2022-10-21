@@ -68,11 +68,11 @@ def main():
 
     # Metrics
     accuracy_metric = BinaryAccuracy(ignore_index=IGN_IDX).to(device)
-    f1_metric = MultilabelF1Score(num_labels=14, ignore_index=IGN_IDX, average=None).to(device)
-    precision_metric = MultilabelPrecision(num_labels=14, ignore_index=IGN_IDX, average=None).to(
+    f1_metric = MultilabelF1Score(num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None).to(device)
+    precision_metric = MultilabelPrecision(num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None).to(
         device
     )
-    recall_metric = MultilabelRecall(num_labels=14, ignore_index=IGN_IDX, average=None).to(device)
+    recall_metric = MultilabelRecall(num_labels=N_CLASSES, ignore_index=IGN_IDX, average=None).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -81,10 +81,10 @@ def main():
     model.train()
     epoch_loss = 0
     mean_acc = 0
-    f1_score = torch.zeros(14).to(device)
-    precision_score = torch.zeros(14).to(device)
-    recall_score = torch.zeros(14).to(device)
-    count_samples = torch.zeros(14).to(device)
+    f1_score = torch.zeros(N_CLASSES).to(device)
+    precision_score = torch.zeros(N_CLASSES).to(device)
+    recall_score = torch.zeros(N_CLASSES).to(device)
+    count_samples = torch.zeros(N_CLASSES).to(device)
     for x, y in tqdm(train_loader):
         x = x.to(device)
         y = y.to(device)
