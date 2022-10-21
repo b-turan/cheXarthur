@@ -1,12 +1,8 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from torchmetrics.classification import (
-    BinaryAccuracy,
-    MultilabelF1Score,
-    MultilabelPrecision,
-    MultilabelRecall,
-)
+from torchmetrics.classification import (BinaryAccuracy, MultilabelF1Score,
+                                         MultilabelPrecision, MultilabelRecall)
 from torchvision import models, transforms
 from tqdm import tqdm
 
@@ -48,7 +44,6 @@ CLASS_NAMES = [
     "Pleural_Thickening",
     "Hernia",
 ]
-DATA_DIR = ".data/"
 BATCH_SIZE = 64
 
 
