@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -24,10 +25,9 @@ from custom_models import initialize_model
 # Therefore, it is preferable to train and serve a model with the same input types.
 # See also below the antialias parameter, which can help making the output of PIL images and tensors closer.
 
-# TODO: Normalization of Dataset!
+# TODO: Data augmentation Normalization, RandomResizedCrop!
 # TODO: weight loss by class ratio?
 # TODO: Write class ``MetricsCheXpert``
-# TODO: Crop imgs?
 
 N_CLASSES = 14
 IGN_IDX = -100
@@ -58,7 +58,13 @@ def main():
     train_data = CheXpertDataset(
         root_dir=".data/",
         split="train",
-        transform=transforms.Compose([transforms.Resize([320, 320]), transforms.ToTensor()]),
+        transform=transforms.Compose(
+            [
+                transforms.Resize([320, 320]),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+            ]
+        ),
         ignore_index=IGN_IDX,
         policy="ignore",
         n_channels=N_CHANNELS,
@@ -89,27 +95,25 @@ def main():
     print("Number of Parameters: ", n_params)
 
     model.train()
-    epoch_loss = 0
+    running_loss = np.array([])
     mean_acc = 0
     f1_score = torch.zeros(N_CLASSES).to(device)
     precision_score = torch.zeros(N_CLASSES).to(device)
     recall_score = torch.zeros(N_CLASSES).to(device)
     count_samples = torch.zeros(N_CLASSES).to(device)
-    for x, y in tqdm(train_loader):
+    for x, y in (pbar := tqdm(train_loader)):
         x = x.to(device)
         y = y.to(device)
 
         # Inference
         logits = model(x)
-        loss = criterion(logits, y)
+        batch_loss = criterion(logits, y)
 
         # Mask to ignore ``NaN``
         mask = y != IGN_IDX
-        loss = torch.masked_select(loss, mask).mean()
+        batch_loss = torch.masked_select(batch_loss, mask).mean()
 
-        epoch_loss += loss
-
-        loss.backward()
+        batch_loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), 1)
         optimizer.step()
         optimizer.zero_grad()
@@ -121,8 +125,14 @@ def main():
         precision_score += precision_metric(preds, y)
         recall_score += recall_metric(preds, y)
 
+        # Calculate running loss for display
+        running_loss = np.append(running_loss, batch_loss.detach().cpu().numpy())
+        avg_loss = np.mean(running_loss[-100:])
+        pbar.set_postfix({"Avg. Loss": avg_loss})
+
         count_samples += mask.sum(dim=0)
 
+    epoch_loss = np.mean(running_loss)
     mean_acc = mean_acc / len(train_loader)
     mean_f1 = [f1 / n for f1, n in zip(f1_score, count_samples)]
     mean_precision = [precision / n for precision, n in zip(precision_score, count_samples)]
