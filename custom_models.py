@@ -21,6 +21,7 @@ def initialize_model(
     """
     # fmt: off
     assert model_name in ("densenet121", "resnet18"), f"Only supports ``densenet121`` or ``resnet18`` for now, got ``{model_name}``."
+    assert n_channels in (1, 3), f"Only supports 1 channel for grayscale or 3 channels for RGB like images, got {n_channels} "
     # fmt: on
 
     model_zoo = {
@@ -92,4 +93,3 @@ class ResNet18(nn.Module):
     def forward(self, x):
         x = self.resnet18(x)
         return x
-
