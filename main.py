@@ -130,7 +130,7 @@ def main():
         # Calculate running loss for display
         running_loss = np.append(running_loss, batch_loss.detach().cpu().numpy())
         avg_loss = np.mean(running_loss[-100:])
-        pbar.set_postfix({"Avg. Loss": avg_loss})
+        pbar.set_postfix({"Running Loss": avg_loss})
     epoch_loss = np.mean(running_loss)
     mean_acc = mean_acc / len(train_loader)
     mean_f1 = [f1 / n for f1, n in zip(f1_score, count_samples)]
