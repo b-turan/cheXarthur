@@ -53,10 +53,12 @@ class CheXpertDataset(Dataset):
         self.policy = policy
         self.n_channels = n_channels
 
-        # Read data
+        # Read data and replace ``NaN`` with ignore_index
         self.df = pd.read_csv(root_dir + f"CheXpert-v1.0-small/{split}.csv")
-        # Replace NaN with ignore_index
         self.df.fillna(value=self.ignore_index, inplace=True)
+
+        # self.df_frontal = self.df[self.df["Path"].str.contains("frontal")].copy()
+        # self.df_lateral = self.df[self.df["Path"].str.contains("lateral")].copy()
 
         if policy == "ignore":
             self.df.replace(to_replace=-1, value=-100, inplace=True)
