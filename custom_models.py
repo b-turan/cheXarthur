@@ -2,18 +2,16 @@ import torch
 from torch import nn
 from torchvision import models
 
-# TODO: Write dict that maps model name to corresponding model
 
-
-def initialize_model(
-    model_name: str, n_classes: int, n_channels: int, pre_trained: bool
+def get_model(
+    model_name: str, num_classes: int, num_channels: int, pre_trained: bool
 ) -> nn.Module:
     """Initializes Model.
 
     Args:
         model_name (str): Model name.
-        n_classes (int): Number of classes.
-        n_channels (int): Number of input channels.
+        num_classes (int): Number of classes.
+        num_channels (int): Number of input channels.
         pre_trained (bool): Pretrained or from scratch initialization.
 
     Returns:
@@ -21,7 +19,7 @@ def initialize_model(
     """
     # fmt: off
     assert model_name in ("densenet121", "resnet18"), f"Only supports ``densenet121`` or ``resnet18`` for now, got ``{model_name}``."
-    assert n_channels in (1, 3), f"Only supports 1 channel for grayscale or 3 channels for RGB like images, got {n_channels} "
+    assert num_channels in (1, 3), f"Only supports 1 channel for grayscale or 3 channels for RGB like images, got {num_channels} "
     # fmt: on
 
     model_zoo = {
@@ -29,7 +27,7 @@ def initialize_model(
         "resnet18": ResNet18,
     }
     ModelConstructor = model_zoo[model_name]
-    model = ModelConstructor(n_classes=n_classes, n_channels=n_channels, pre_trained=pre_trained)
+    model = ModelConstructor(num_classes=num_classes, num_channels=num_channels, pre_trained=pre_trained)
 
     return model
 
@@ -40,12 +38,12 @@ class DenseNet121(nn.Module):
     Standard DenseNet121 except the input/output layer are adapted to the cheXpert dataset.
     """
 
-    def __init__(self, n_classes: int, n_channels: int, pre_trained: bool):
+    def __init__(self, num_classes: int, num_channels: int, pre_trained: bool):
         """Initializes DenseNet121. Modifies input and output layer.
 
         Args:
-            n_classes (int): Number of classes.
-            n_channels (int): Number of channels.
+            num_classes (int): Number of classes.
+            num_channels (int): Number of channels.
             pre_trained (bool): If true, loads pre-trained weights.
         """
         super().__init__()
@@ -53,11 +51,11 @@ class DenseNet121(nn.Module):
         self.densenet121 = models.densenet121(weights=weights)
 
         self.densenet121.features.conv0 = nn.Conv2d(
-            n_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
+            num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
         )
         # Adapt output layer
         num_ftrs = self.densenet121.classifier.in_features
-        self.densenet121.classifier = nn.Linear(num_ftrs, n_classes)
+        self.densenet121.classifier = nn.Linear(num_ftrs, num_classes)
 
     def forward(self, x):
         x = self.densenet121(x)
@@ -70,12 +68,12 @@ class ResNet18(nn.Module):
     Standard ResNet18 except the input/output layer are adapted to the cheXpert dataset.
     """
 
-    def __init__(self, n_classes: int, n_channels: int, pre_trained: bool):
+    def __init__(self, num_classes: int, num_channels: int, pre_trained: bool):
         """Initializes ResNet18. Modifies input and output layer.
 
         Args:
-            n_classes (int): Number of classes.
-            n_channels (int): Number of channels.
+            num_classes (int): Number of classes.
+            num_channels (int): Number of channels.
             pre_trained (bool): If true, loads pre-trained weights.
         """
         super().__init__()
@@ -84,11 +82,11 @@ class ResNet18(nn.Module):
 
         # Adapt input layer
         self.resnet18.conv1 = nn.Conv2d(
-            n_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
+            num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
         )
         # Adapt output layer
         num_ftrs = self.resnet18.fc.in_features
-        self.resnet18.fc = nn.Linear(num_ftrs, n_classes)
+        self.resnet18.fc = nn.Linear(num_ftrs, num_classes)
 
     def forward(self, x):
         x = self.resnet18(x)
