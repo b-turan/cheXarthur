@@ -29,7 +29,7 @@ class CheXpertDataset(Dataset):
         transform: Optional[Callable] = None,
         ignore_index: Optional[int] = -100,
         policy: Optional[str] = "ignore",
-        n_channels: Optional[int] = 1,
+        num_channels: Optional[int] = 1,
     ) -> None:
         """
         Args:
@@ -39,19 +39,19 @@ class CheXpertDataset(Dataset):
             ignore_index (int, optional): Replaces all NaN's by ignore_index, which are ignored in later loss calculations.
             policy (str, optional): Determines how to deal with ``uncertainty label``,
                 supports ``ignore``, ``ones`` and ``zeros``.
-            n_channels (int, optional): Number of color channels, supports 1 and 3.
-                If n_channels=3, R=G=B=Grayscale, which is useful since it allows loading pretrained models.
+            num_channels (int, optional): Number of color channels, supports 1 and 3.
+                If num_channels=3, R=G=B=Grayscale, which is useful since it allows loading pretrained models.
         """
         # fmt: off
         assert split in ("train", "valid"), f"Expected support for split is ``train`` or ``valid``, got ``{split}``"
         assert root_dir[-1] == "/", f"Expected ``root_dir`` to have ``/`` at the end of the string, got ``{root_dir}``"
         assert policy in ("ignore", "ones", "zeros"), f"Expected support for ``policy`` is ``ignore``, ``ones`` or ``zeros``, got ``{policy}``"
-        assert n_channels in (1, 3), f"Expected support for ``n_channels`` is 1 or 3, got ``{n_channels}``"
+        assert num_channels in (1, 3), f"Expected support for ``num_channels`` is 1 or 3, got ``{num_channels}``"
         # fmt: on
 
         self.ignore_index = ignore_index
         self.policy = policy
-        self.n_channels = n_channels
+        self.num_channels = num_channels
 
         # Read data and replace ``NaN`` with ignore_index
         self.df = pd.read_csv(root_dir + f"CheXpert-v1.0-small/{split}.csv")
@@ -76,9 +76,9 @@ class CheXpertDataset(Dataset):
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         img_name = os.path.join(self.root_dir, self.df.iloc[idx, 0])
 
-        if self.n_channels == 1:
+        if self.num_channels == 1:
             cxr_img = Image.open(img_name)
-        elif self.n_channels == 3:
+        elif self.num_channels == 3:
             cxr_img = Image.open(img_name).convert("RGB")
 
         label = self.df.iloc[idx, 5:]
