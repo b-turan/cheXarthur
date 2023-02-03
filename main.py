@@ -5,7 +5,6 @@ import sklearn.model_selection
 import torch
 import torchvision.transforms as transforms
 import torchxrayvision as xrv
-from sklearn.metrics import precision_recall_fscore_support
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
