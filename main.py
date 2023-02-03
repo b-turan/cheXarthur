@@ -1,11 +1,15 @@
 import argparse
 
+import numpy as np
 import sklearn
 import sklearn.model_selection
 import torch
 import torchvision.transforms as transforms
 import torchxrayvision as xrv
+from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
 from tqdm import tqdm
+
+from utils import MetricsCollector
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", type=int, default=0, help="")
@@ -54,7 +58,12 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=cfg.batch_siz
 
 # Training Routine
 model.train()
+pathologies = [pathology for pathology in model.pathologies if pathology != ""]
 criterion = torch.nn.BCEWithLogitsLoss()
+# Initialize a list to store the class-wise AUC-ROC scores for the current batch
+batch_class_auc_scores = []
+num_classes = 11
+metric_collector = MetricsCollector("precision", "recall", "f1")
 pbar = tqdm(train_loader, desc=f"Train Epoch")
 for sample in pbar:
     images = sample["img"].to(device)  # (batch_size, 1, 224, 224)
@@ -64,8 +73,8 @@ for sample in pbar:
     # Inference model
     outputs = model(images)
     # Remove the labels that are not present in the dataset and reshape
-    labels = labels[outputs != 0.5].view(batch_size, 11)
-    outputs = outputs[outputs != 0.5].view(batch_size, 11)
+    labels = labels[outputs != 0.5].view(batch_size, num_classes)
+    outputs = outputs[outputs != 0.5].view(batch_size, num_classes)
     # Set uncertain labels reperesented by NaN to 0
     labels[torch.isnan(labels)] = 0
     # Compute the loss
@@ -74,6 +83,37 @@ for sample in pbar:
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
+    # Predictions
+    y_preds = torch.sigmoid(outputs).detach().cpu()
+    # Threshold the predictions to obtainy y_preds
+    y_preds[y_preds >= 0.5] = 1
+    y_preds[y_preds < 0.5] = 0
+    # Calculate metrics, recall, precision and F1 score
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels.cpu(), y_preds.cpu(), average=None
+    )
+
+    # Update metrics
+    metric_collector.add(precision=precision, recall=recall, f1=f1)
     # Update progress bar
     pbar.set_postfix({"loss": loss.item()})
     pbar.update()
+
+    for class_index in range(num_classes):
+        # Get the true labels for the current class
+        y_true = labels[:, class_index].cpu()
+        # Get the predicted probabilities for the current class
+        y_prob = y_preds[:, class_index].cpu()
+        if len(np.unique(y_true)) <= 1:
+            continue
+        # Calculate the AUC-ROC score for the current class
+        class_auc = roc_auc_score(y_true, y_prob)
+        # Add the current class AUC score to the list
+        batch_class_auc_scores.append(class_auc)
+
+avg_precision = metric_collector.average("precision")
+avg_recall = metric_collector.average("recall")
+avg_f1 = metric_collector.average("f1")
+print(f"Train Precision: {avg_precision}")
+print(f"Train Recall: {avg_recall}")
+print(f"Train F1: {avg_f1}")
