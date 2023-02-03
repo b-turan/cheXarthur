@@ -52,7 +52,6 @@ test_dataset = xrv.datasets.SubsetDataset(chexpert_dataset, test_inds)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)  # type: ignore
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=cfg.batch_size, shuffle=False)  # type: ignore
 
-
 # Training Routine
 model.train()
 criterion = torch.nn.BCEWithLogitsLoss()
